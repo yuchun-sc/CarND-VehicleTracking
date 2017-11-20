@@ -4,17 +4,40 @@ import matplotlib.pyplot as plt
 import cv2
 from feature_extraction import FeatureExtraction
 import pickle
-import glob
-from skimage.feature import hog
-from sklearn.preprocessing import StandardScaler
-import json
 
 
 class ObjectionDetection:
-    def __init__(self):
-        pass
+    def __init__(self, model_file):
+        pkl_file = open(model_file, 'rb')
+        model_info = pickle.load(pkl_file)
 
-    # Here is your draw_boxes function from the previous exercise
+        self.model = model_info['model']
+        self.scaler = model_info['scaler']
+
+    def run(self, img):
+        window_params = self._get_window_params()
+        windows = []
+        for param in window_params:
+            windows += self._generate_windowns(img, x_start_stop=param[0], y_start_stop=param[1],
+                                     xy_window=param[2], xy_overlap=param[3])
+        # 1) Create an empty list to receive positive detection windows
+        on_windows = []
+        # 2) Iterate over all windows in the list
+        for window in windows:
+            # 3) Extract the test window from original image
+            test_img = img[window[0][1]:window[1][1], window[0][0]:window[1][0]]
+            # 4) Extract features for that window using single_img_features()
+            features = FeatureExtraction().run(test_img)
+            normalized_feature = self.scaler.transform(features)
+            prediction = self.model.predict([normalized_feature])
+
+            if prediction == 1:
+                on_windows.append(window)
+
+        resulting_img = self.draw_boxes(img, on_windows, color=(255, 0, 0), thick=2)
+
+        return resulting_img, on_windows
+
     def draw_boxes(self, img, bboxes, color=(0, 0, 255), thick=6):
         # Make a copy of the image
         imcopy = np.copy(img)
@@ -25,11 +48,7 @@ class ObjectionDetection:
         # Return the image copy with boxes drawn
         return imcopy
 
-    # Define a function that takes an image,
-    # start and stop positions in both x and y,
-    # window size (x and y dimensions),
-    # and overlap fraction (for both x and y)
-    def slide_window(self, img, x_start_stop=[None, None], y_start_stop=[None, None],
+    def _generate_windowns(self, img, x_start_stop=[None, None], y_start_stop=[None, None],
                      xy_window=(64, 64), xy_overlap=(0.5, 0.5)):
         # If x and/or y start/stop positions not defined, set to image size
         if x_start_stop[0] == None:
@@ -69,29 +88,20 @@ class ObjectionDetection:
         # Return the list of windows
         return window_list
 
-    def search_windows(self, img, windows, clf):
-        # 1) Create an empty list to receive positive detection windows
-        on_windows = []
-        # 2) Iterate over all windows in the list
-        for window in windows:
-            # 3) Extract the test window from original image
-            # test_img = cv2.resize(img[window[0][1]:window[1][1], window[0][0]:window[1][0]], (64, 64))
-            test_img = img[window[0][1]:window[1][1], window[0][0]:window[1][0]]
-            # 4) Extract features for that window using single_img_features()
+    def _get_window_params(self):
+        windows = []
+        # append x_start_stop, y_start_stop, xy_window, xy_overlap
+        windows.append([[400, 1000], [400, 464], (32, 32), (0.5, 0.5)])
+        windows.append([[400, 1100], [400, 488], (48, 48), (0.5, 0.5)])
+        windows.append([[400, 1200], [400, 496], (64, 64), (0.5, 0.5)])
+        windows.append([[250, 1280], [400, 544], (96, 96), (0.75, 0.75)])
+        windows.append([[250, 1280], [400, 544], (128, 128), (0.5, 0.5)])
 
-            features = FeatureExtraction().get_features(test_img)
-
-            prediction = clf.predict([features])
-            # 7) If positive (prediction == 1) then save the window
-            if prediction == 1:
-                on_windows.append(window)
-        # 8) Return windows for positive detections
-        return on_windows
-
+        return windows
 
 if __name__ == "__main__":
-    image_path = "./project_video/images00330.jpg"
-    # image_path = "/home/shaocheng/Desktop/test5.png"
+    # image_path = "./project_video/images00330.jpg"
+    image_path = "/home/shaocheng/Desktop/test5.png"
     image = mpimg.imread(image_path)
 
     print(image)
