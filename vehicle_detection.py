@@ -100,44 +100,8 @@ class ObjectionDetection:
         return windows
 
 if __name__ == "__main__":
-    # image_path = "./project_video/images00330.jpg"
-    image_path = "/home/shaocheng/Desktop/test5.png"
-    image = mpimg.imread(image_path)
-
-    print(image)
-    plt.imshow(image)
-    plt.show()
-
-    image = image.astype(np.float32) / 255
-
-    pkl_file = open('./svm_model_linea_YCrCb_32.pkl', 'rb')
-
-    clf = pickle.load(pkl_file)
-    # a = FeatureExtraction().get_features(image)
-    # print(clf.predict([a]))
+    pass
 
 
-    a = ObjectionDetection()
-    param_list = []
-    # append x_start_stop, y_start_stop, xy_window, xy_overlap
-    param_list.append([[400, 1000], [400, 464], (32, 32), (0.5, 0.5)])
-    param_list.append([[400, 1100], [400, 488], (48, 48), (0.5, 0.5)])
-    param_list.append([[400, 1200], [400, 496], (64, 64), (0.5, 0.5)])
-    param_list.append([[250, 1280], [400, 544], (96, 96), (0.75, 0.75)])
-    param_list.append([[250, 1280], [400, 544], (128, 128), (0.5, 0.5)])
-    # param_list.append([[250, 1280], [360, 544], (200, 112), (0.0, 0.75)])
-    windows = []
-    for param in param_list:
-        windows += a.slide_window(image, x_start_stop=param[0], y_start_stop=param[1],
-                                 xy_window=param[2], xy_overlap=param[3])
 
-    window_img2 = a.draw_boxes(image, windows, color=(255, 0, 0), thick=2)
-    plt.imshow(window_img2)
-    plt.show()
-
-    hot_windows = a.search_windows(image, windows, clf)
-
-    window_img1 = a.draw_boxes(image, hot_windows, color=(255, 0, 0), thick=2)
-    plt.imshow(window_img1)
-    plt.show()
 
